@@ -1,0 +1,69 @@
+name: takeaway
+x-logging: &app-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+services:
+  postgres:
+    image: mirror.ccs.tencentyun.com/library/postgres:16-alpine
+    logging: *app-logging
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+    - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  backend:
+    build:
+      context: ./backend
+    logging: *app-logging
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      ENABLE_COMMERCE: 'true'
+      ENABLE_TEST_COMMERCE: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+    - sh
+    - -c
+    - alembic upgrade head && uvicorn app.main:app --host 0.0.0.0
+      --port 8000
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+    - media_uploads:/app/media/uploads
+  nginx:
+    image: mirror.ccs.tencentyun.com/library/nginx:1.27-alpine
+    logging: *app-logging
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+    - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    - ./nginx/html:/usr/share/nginx/html:ro
+    - media_uploads:/usr/share/nginx/html/media/uploads:ro
+    ports:
+    - ${NGINX_BIND_ADDRESS:-0.0.0.0}:${NGINX_PORT:-80}:80
+volumes:
+  postgres_data: null
+  media_uploads: null

@@ -1,0 +1,1 @@
+"""Takeaway backend application."""

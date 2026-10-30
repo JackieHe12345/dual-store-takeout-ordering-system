@@ -1,0 +1,23 @@
+{
+  "name": "takeaway-frontends",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "build": "vue-tsc --noEmit && npm run build:customer && npm run build:staff && npm run build:admin",
+    "build:customer": "vite build --mode customer",
+    "build:staff": "vite build --mode staff",
+    "build:admin": "vite build --mode admin"
+  },
+  "dependencies": {
+    "vue": "^3.5.0",
+    "pinia": "^3.0.0",
+    "lucide-vue-next": "^0.468.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "vite": "^7.0.0",
+    "typescript": "^5.9.0",
+    "vue-tsc": "^3.0.0"
+  }
+}
